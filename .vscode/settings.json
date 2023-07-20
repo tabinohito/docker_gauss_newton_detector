@@ -1,0 +1,14 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/irsl/workspace/src/ana/catkin_ws_ana/devel/lib/python3/dist-packages",
+        "/home/irsl/workspace/src/catkin_data_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/usr/local/lib/python3.8/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/irsl/workspace/src/ana/catkin_ws_ana/devel/lib/python3/dist-packages",
+        "/home/irsl/workspace/src/catkin_data_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/usr/local/lib/python3.8/dist-packages"
+    ]
+}
