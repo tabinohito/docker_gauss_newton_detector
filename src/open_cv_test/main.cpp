@@ -3,7 +3,7 @@
 int main()
 {
     // image.pngをimgに代入
-    cv::Mat img = cv::imread("../Lenna.png");
+    cv::Mat img = cv::imread("../../image/Lenna.png");
 
     // imgの表示
     cv::imshow("img", img);
