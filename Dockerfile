@@ -19,7 +19,7 @@ RUN sed -i 's@archive.ubuntu.com@ftp.jaist.ac.jp/pub/Linux@g' /etc/apt/sources.l
 # Install basic packages
 RUN apt-get update -qq && \
     apt-get install -y \
-    sudo aptitude build-essential \
+    aptitude build-essential \
     lsb-release \
     tzdata \
     wget \
@@ -40,7 +40,7 @@ RUN mkdir -p workspace
 WORKDIR /workspace
 
 # Media I/O:
-RUN sudo apt install -y \
+RUN apt install -y \
     zlib1g-dev \
     libjpeg-dev \
     libwebp-dev \
@@ -51,7 +51,7 @@ RUN sudo apt install -y \
     libgtk2.0-dev
 
 # Parallelism and linear algebra libraries:
-RUN sudo apt install -y \
+RUN apt install -y \
     libtbb-dev \
     libeigen3-dev
 
@@ -91,3 +91,8 @@ RUN apt-get update -qq && \
     libmpfr-dev \
     gcc-12
 
+# Install GTK
+RUN apt-get update -qq && \
+    apt-get install -y \
+    libcanberra-gtk-module \
+    libcanberra-gtk3-module
