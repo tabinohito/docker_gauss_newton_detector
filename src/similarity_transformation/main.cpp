@@ -12,8 +12,6 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    std::cout << "入力画像のサイズ: " << inputImage.rows << " : " << inputImage.cols << std::endl;
-
     // 入力変換パラメータ
     if(argc != 3) {
         std::cerr << "Wrong number of input parameters" << std::endl;
@@ -41,6 +39,9 @@ int main(int argc, char* argv[])
     // 4. 変換を行う
     cv::Mat outputImage;
     cv::warpAffine(inputImage, outputImage, rotationMatrix, inputImage.size());
+
+    std::cout << "入力画像のサイズ: " << inputImage.rows << " : " << inputImage.cols << std::endl;
+    std::cout << "出力画像のサイズ: " << outputImage.rows << " : " << outputImage.cols << std::endl;
 
 
     // imgの表示

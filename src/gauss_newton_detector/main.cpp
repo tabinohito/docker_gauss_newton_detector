@@ -48,7 +48,7 @@ int main() {
                 cv::Mat block = inputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
-                        gradientX.at<int16_t>(row, col) += block.at<int16_t>(i, j) * differential_filter_x.at<double>(i, j);
+                        gradientX.at<int16_t>(col,row) += block.at<int16_t>(j,i) * differential_filter_x.at<double>(j, i);
                     }
                 }
             }
@@ -68,7 +68,7 @@ int main() {
                 cv::Mat block = inputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
-                        gradientY.at<int16_t>(row, col) += block.at<int16_t>(i, j) * differential_filter_y.at<double>(i, j);
+                        gradientY.at<int16_t>(col,row) += block.at<int16_t>(j , i) * differential_filter_y.at<double>(j , i);
                     }
                 }
             }
@@ -93,18 +93,18 @@ int main() {
                     continue;
                 }
                 else{
-                    double diff_I = static_cast<double>(inputSimilarityImage.at<int16_t>(std::round(x),std::round(y)) - static_cast<double>(inputImage.at<int16_t>(row, col)));
+                    double diff_I = static_cast<double>(inputSimilarityImage.at<int16_t>(std::round(y),std::round(x)) - static_cast<double>(inputImage.at<int16_t>(col,row)));
                     J += 0.5 * (diff_I * diff_I);
 
                     double tmp_theta = 
-                    gradientX.at<int16_t>(std::round(x),std::round(y))*(-1 * std::sin   (estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
+                    gradientX.at<int16_t>(std::round(y))*(-1 * std::sin   (estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col),std::round(x))
                     +
-                    gradientY.at<int16_t>(std::round(x),std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
+                    gradientY.at<int16_t>(std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col),std::round(x));
 
                     double tmp_scale =
-                    gradientX.at<int16_t>(std::round(x),std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))
+                    gradientX.at<int16_t>(std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col) ,std::round(x))
                     +
-                    gradientY.at<int16_t>(std::round(x),std::round(y))*(std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col));
+                    gradientY.at<int16_t>(std::round(y))*(std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col),std::round(x));
 
                     // std::cerr << "(x, y): " << std::round(x) << ", " << std::round(y) << std::endl;
                     // std::cerr << "diff_I: " << diff_I << std::endl;
@@ -144,7 +144,7 @@ int main() {
             std::cerr << "estimate_theta: " << estimate_theta << std::endl;
             std::cerr << "estimate_scale: " << estimate_scale << std::endl;
         }
-        break;
+        // break;
     }
 
     std::cerr << "theta: " << estimate_theta * 180 / M_PI << std::endl;
