@@ -12,7 +12,7 @@ int main() {
     // 入力画像を読み込む
     cv::Mat colorSimilarityImage = cv::imread(image_path + "Lenna_similarity.png");
     if (colorImage.empty() || colorSimilarityImage.empty()) {
-        std::cout << "入力画像を読み込めませんでした。" << std::endl;
+        std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
     }
 
@@ -27,8 +27,11 @@ int main() {
     // cv::waitKey(0);
 
     //初期値を適当に与える
-    double estimate_theta = 0;
-    double estimate_scale = 1;
+    double estimate_theta = 0.0872665;
+    double estimate_scale = 0.95;
+
+    // double estimate_theta = 0;
+    // double estimate_scale = 1;
 
     while(1){
         //画像I'に対する平滑微分画像I'x を計算する
@@ -76,6 +79,7 @@ int main() {
         double J_scale = 0; // scaleでの1回微分
         double J_scale_scale = 0.0; // scaleでの2回微分
         double J_theta_scale = 0.0; // thetaとscaleの混合微分
+        double J = 0;
 
         cv::Point2f center(inputSimilarityImage.cols / 2.0, inputSimilarityImage.rows / 2.0);
         for (int row = 0; row < inputSimilarityImage.rows; ++row) {
@@ -84,30 +88,43 @@ int main() {
                 double x = (static_cast<double>(row) - center.x) * std::cos(estimate_theta) - (static_cast<double>(col) - center.y) * std::sin(estimate_theta) + center.x;
                 double y = (static_cast<double>(row) - center.x) * std::sin(estimate_theta) + (static_cast<double>(col) - center.y) * std::cos(estimate_theta) + center.y;
 
-                double diff_I = static_cast<double>(inputSimilarityImage.at<int16_t>(std::round(x),std::round(y))) - static_cast<double>(inputImage.at<int16_t>(row, col));
+                // 出力画像の座標が入力画像の範囲内であるかをチェックする
+                if (x < 0 || x >= inputSimilarityImage.rows || y < 0 || y >= inputSimilarityImage.cols) {
+                    continue;
+                }
+                else{
+                    double diff_I = static_cast<double>(inputSimilarityImage.at<int16_t>(std::round(x),std::round(y)) - static_cast<double>(inputImage.at<int16_t>(row, col)));
+                    J += 0.5 * (diff_I * diff_I);
 
-                double tmp_theta = 
-                gradientX.at<int16_t>(std::round(x),std::round(y))*(-1 * std::sin   (estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
-                +
-                gradientY.at<int16_t>(std::round(x),std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
+                    double tmp_theta = 
+                    gradientX.at<int16_t>(std::round(x),std::round(y))*(-1 * std::sin   (estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
+                    +
+                    gradientY.at<int16_t>(std::round(x),std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
 
-                double tmp_scale =
-                gradientX.at<int16_t>(std::round(x),std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))
-                +
-                gradientY.at<int16_t>(std::round(x),std::round(y))*(std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col));
+                    double tmp_scale =
+                    gradientX.at<int16_t>(std::round(x),std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))
+                    +
+                    gradientY.at<int16_t>(std::round(x),std::round(y))*(std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col));
 
-                J_theta += diff_I * tmp_theta;
-                J_theta_theta += tmp_theta * tmp_theta;
-                J_scale += diff_I * tmp_scale;
-                J_scale_scale += diff_I * tmp_scale * tmp_scale;
+                    // std::cerr << "(x, y): " << std::round(x) << ", " << std::round(y) << std::endl;
+                    // std::cerr << "diff_I: " << diff_I << std::endl;
+                    J_theta += diff_I * tmp_theta;
+                    J_theta_theta += tmp_theta * tmp_theta;
+                    J_scale += diff_I * tmp_scale;
+                    J_scale_scale += diff_I * tmp_scale * tmp_scale;
+                    J_theta_scale +=  tmp_theta * (diff_I + tmp_scale);
+                    
+                }
             }
         }
 
-        std::cout << "J_theta: " << J_theta << std::endl;
-        std::cout << "J_theta_theta: " << J_theta_theta << std::endl;
-        std::cout << "J_scale: " << J_scale << std::endl;
-        std::cout << "J_scale_scale: " << J_scale_scale << std::endl;
-        std::cout << "J_theta_scale: " << J_theta_scale << std::endl;
+        std::cerr << "J: " << J << std::endl;
+
+        std::cerr << "J_theta: " << J_theta << std::endl;
+        std::cerr << "J_theta_theta: " << J_theta_theta << std::endl;
+        std::cerr << "J_scale: " << J_scale << std::endl;
+        std::cerr << "J_scale_scale: " << J_scale_scale << std::endl;
+        std::cerr << "J_theta_scale: " << J_theta_scale << std::endl;
 
         Eigen::Matrix2d A;
         A << J_theta_theta, J_theta_scale,
@@ -116,21 +133,22 @@ int main() {
         B << J_theta, J_scale;
 
         Eigen::Vector2d X = -A.inverse() * B;
-        std::cout << "X: \n" << X << std::endl;
+        std::cerr << "X: \n" << X << std::endl;
 
-        if(std::abs(X(0)) < 1e-3 && std::abs(X(1)) < 1e-3 ){
+        if(std::abs(J) < 1e-6 ){
             break;
         }
         else{
             estimate_theta += X(0);
             estimate_scale += X(1);
-            std::cout << "estimate_theta: " << estimate_theta << std::endl;
-            std::cout << "estimate_scale: " << estimate_scale << std::endl;
+            std::cerr << "estimate_theta: " << estimate_theta << std::endl;
+            std::cerr << "estimate_scale: " << estimate_scale << std::endl;
         }
+        break;
     }
 
-    std::cout << "theta: " << estimate_theta << std::endl;
-    std::cout << "scale: " << estimate_scale << std::endl;
+    std::cerr << "theta: " << estimate_theta * 180 / M_PI << std::endl;
+    std::cerr << "scale: " << estimate_scale << std::endl;
 
 
     // cv::imwrite(image_path + "gradientX.jpg", gradientX);
