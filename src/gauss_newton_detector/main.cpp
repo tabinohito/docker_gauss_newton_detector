@@ -27,8 +27,8 @@ int main() {
     // cv::waitKey(0);
 
     //初期値を適当に与える
-    double estimate_theta = M_PI;
-    double estimate_scale = 0.5;
+    double estimate_theta = 0;
+    double estimate_scale = 1;
 
     while(1){
         //画像I'に対する平滑微分画像I'x を計算する
@@ -76,45 +76,30 @@ int main() {
         double J_scale = 0; // scaleでの1回微分
         double J_scale_scale = 0.0; // scaleでの2回微分
         double J_theta_scale = 0.0; // thetaとscaleの混合微分
+
+        cv::Point2f center(inputSimilarityImage.cols / 2.0, inputSimilarityImage.rows / 2.0);
         for (int row = 0; row < inputSimilarityImage.rows; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols; ++col) {
-                // std::cout << "i , j ="
-                //     << row << " , " << col << " : "
-                //     << gradientX.at<int16_t>(
-                //     estimate_scale * ((-1) * std::sin(estimate_theta) * static_cast<double>(row) , 
-                //     estimate_scale * (-1) *  std::cos(estimate_theta) * static_cast<double>(col))) 
-                //     << " : "
-                //     << gradientY.at<int16_t>(
-                //     estimate_scale * ((-1) * std::cos(estimate_theta) * static_cast<double>(row),
-                //     estimate_scale * std::sin(estimate_theta) * static_cast<double>(col)))
-                // << std::endl;
+                // 出力画像の座標を計算する
+                double x = (static_cast<double>(row) - center.x) * std::cos(estimate_theta) - (static_cast<double>(col) - center.y) * std::sin(estimate_theta) + center.x;
+                double y = (static_cast<double>(row) - center.x) * std::sin(estimate_theta) + (static_cast<double>(col) - center.y) * std::cos(estimate_theta) + center.y;
 
-                double tmp = 
-                gradientX.at<int16_t>(
-                    estimate_scale * ((-1) * std::sin(estimate_theta) * static_cast<double>(row) , 
-                    estimate_scale * (-1) *  std::cos(estimate_theta) * static_cast<double>(col))) +
-                gradientY.at<int16_t>(
-                    estimate_scale * ((-1) * std::cos(estimate_theta) * static_cast<double>(row),
-                    estimate_scale * std::sin(estimate_theta) * static_cast<double>(col)));
-                J_theta += (static_cast<double>(
-                inputSimilarityImage.at<int16_t>(
-                    estimate_scale * (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col)) , 
-                    estimate_scale * (std::sin(estimate_theta) * static_cast<double>(row) + std::sin(estimate_theta) * static_cast<double>(col)) ) 
-                    - 
-                inputImage.at<int16_t>(
-                    row, 
-                    col)))
-                    * tmp;
-                J_theta_theta += tmp * tmp; 
+                double diff_I = static_cast<double>(inputSimilarityImage.at<int16_t>(std::round(x),std::round(y))) - static_cast<double>(inputImage.at<int16_t>(row, col));
 
-                // std::cout << "row , col = " << (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))  << " , " << (std::sin(estimate_theta) * static_cast<double>(row) + std::sin(estimate_theta) * static_cast<double>(col)) << std::endl;
-                J_scale += inputSimilarityImage.at<int16_t>(
-                    (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col)) , 
-                    (std::sin(estimate_theta) * static_cast<double>(row) + std::sin(estimate_theta) * static_cast<double>(col)) ) ;
+                double tmp_theta = 
+                gradientX.at<int16_t>(std::round(x),std::round(y))*(-1 * std::sin   (estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
+                +
+                gradientY.at<int16_t>(std::round(x),std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
 
-                J_theta_scale += inputSimilarityImage.at<int16_t>(
-                    ((-1) * std::sin(estimate_theta) * static_cast<double>(row) + (-1) * std::cos(estimate_theta) * static_cast<double>(col)) , 
-                    (std::cos(estimate_theta) * static_cast<double>(row) + (-1) * std::sin(estimate_theta) * static_cast<double>(col)) );
+                double tmp_scale =
+                gradientX.at<int16_t>(std::round(x),std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))
+                +
+                gradientY.at<int16_t>(std::round(x),std::round(y))*(std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col));
+
+                J_theta += diff_I * tmp_theta;
+                J_theta_theta += tmp_theta * tmp_theta;
+                J_scale += diff_I * tmp_scale;
+                J_scale_scale += diff_I * tmp_scale * tmp_scale;
             }
         }
 
@@ -133,7 +118,7 @@ int main() {
         Eigen::Vector2d X = -A.inverse() * B;
         std::cout << "X: \n" << X << std::endl;
 
-        if(std::abs(X(0)) < 1e-6 && std::abs(X(1)) < 1e-6 ){
+        if(std::abs(X(0)) < 1e-3 && std::abs(X(1)) < 1e-3 ){
             break;
         }
         else{
@@ -143,6 +128,9 @@ int main() {
             std::cout << "estimate_scale: " << estimate_scale << std::endl;
         }
     }
+
+    std::cout << "theta: " << estimate_theta << std::endl;
+    std::cout << "scale: " << estimate_scale << std::endl;
 
 
     // cv::imwrite(image_path + "gradientX.jpg", gradientX);
