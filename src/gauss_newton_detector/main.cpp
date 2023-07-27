@@ -27,8 +27,8 @@ int main() {
     // cv::waitKey(0);
 
     //初期値を適当に与える
-    double estimate_theta = 0.0872665;
-    double estimate_scale = 0.95;
+    double estimate_theta = -M_PI;
+    double estimate_scale = 0.99;
 
     // double estimate_theta = 0;
     // double estimate_scale = 1;
@@ -40,7 +40,7 @@ int main() {
             0, -1, 1,
             0, 0, 0);
 
-        cv::Mat gradientX(inputSimilarityImage.size(), CV_16S, cv::Scalar(0));
+        cv::Mat gradientX(inputSimilarityImage.size(), CV_8U, cv::Scalar(0));
 
         for (int row = 0; row < inputSimilarityImage.rows - 2; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols - 2; ++col) {
@@ -48,7 +48,7 @@ int main() {
                 cv::Mat block = inputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
-                        gradientX.at<int16_t>(col,row) += block.at<int16_t>(j,i) * differential_filter_x.at<double>(j, i);
+                        gradientX.at<uint8_t>(col,row) += block.at<uint8_t>(j,i) * differential_filter_x.at<double>(j, i);
                     }
                 }
             }
@@ -60,7 +60,7 @@ int main() {
             0, -1, 0,
             0, 1, 0);
 
-        cv::Mat gradientY(inputSimilarityImage.size(), CV_16S, cv::Scalar(0));
+        cv::Mat gradientY(inputSimilarityImage.size(), CV_8U, cv::Scalar(0));
 
         for (int row = 0; row < inputSimilarityImage.rows - 2; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols - 2; ++col) {
@@ -68,7 +68,7 @@ int main() {
                 cv::Mat block = inputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
-                        gradientY.at<int16_t>(col,row) += block.at<int16_t>(j , i) * differential_filter_y.at<double>(j , i);
+                        gradientY.at<uint8_t>(col,row) += block.at<uint8_t>(j , i) * differential_filter_y.at<double>(j , i);
                     }
                 }
             }
@@ -81,33 +81,31 @@ int main() {
         double J_theta_scale = 0.0; // thetaとscaleの混合微分
         double J = 0;
 
-        cv::Point2f center(inputSimilarityImage.cols / 2.0, inputSimilarityImage.rows / 2.0);
+        cv::Point2d center(inputSimilarityImage.cols / 2.0, inputSimilarityImage.rows / 2.0);
         for (int row = 0; row < inputSimilarityImage.rows; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols; ++col) {
                 // 出力画像の座標を計算する
-                double x = (static_cast<double>(row) - center.x) * std::cos(estimate_theta) - (static_cast<double>(col) - center.y) * std::sin(estimate_theta) + center.x;
-                double y = (static_cast<double>(row) - center.x) * std::sin(estimate_theta) + (static_cast<double>(col) - center.y) * std::cos(estimate_theta) + center.y;
+                double x = estimate_scale * ((static_cast<double>(row) - center.x) * std::cos(estimate_theta) - (static_cast<double>(col) - center.y) * std::sin(estimate_theta) + center.x);
+                double y = estimate_scale * ((static_cast<double>(row) - center.x) * std::sin(estimate_theta) + (static_cast<double>(col) - center.y) * std::cos(estimate_theta) + center.y);
 
                 // 出力画像の座標が入力画像の範囲内であるかをチェックする
                 if (x < 0 || x >= inputSimilarityImage.rows || y < 0 || y >= inputSimilarityImage.cols) {
                     continue;
                 }
                 else{
-                    double diff_I = static_cast<double>(inputSimilarityImage.at<int16_t>(std::round(y),std::round(x)) - static_cast<double>(inputImage.at<int16_t>(col,row)));
+                    double diff_I = static_cast<double>(inputSimilarityImage.at<uint8_t>(std::round(y),std::round(x)) - static_cast<double>(inputImage.at<uint8_t>(col,row)));
                     J += 0.5 * (diff_I * diff_I);
 
                     double tmp_theta = 
-                    gradientX.at<int16_t>(std::round(y))*(-1 * std::sin   (estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col),std::round(x))
+                    gradientX.at<uint8_t>(std::round(y),std::round(x)) * (-1 * std::sin(estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
                     +
-                    gradientY.at<int16_t>(std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col),std::round(x));
+                    gradientY.at<uint8_t>(std::round(y),std::round(x)) * (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
 
                     double tmp_scale =
-                    gradientX.at<int16_t>(std::round(y))*(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col) ,std::round(x))
+                    gradientX.at<uint8_t>(std::round(y),std::round(x)) * (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))
                     +
-                    gradientY.at<int16_t>(std::round(y))*(std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col),std::round(x));
+                    gradientY.at<uint8_t>(std::round(y),std::round(x)) * (std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col));
 
-                    // std::cerr << "(x, y): " << std::round(x) << ", " << std::round(y) << std::endl;
-                    // std::cerr << "diff_I: " << diff_I << std::endl;
                     J_theta += diff_I * tmp_theta;
                     J_theta_theta += tmp_theta * tmp_theta;
                     J_scale += diff_I * tmp_scale;
@@ -135,7 +133,7 @@ int main() {
         Eigen::Vector2d X = -A.inverse() * B;
         std::cerr << "X: \n" << X << std::endl;
 
-        if(std::abs(J) < 1e-6 ){
+        if(std::abs(J) < 1e+6 ){
             break;
         }
         else{
