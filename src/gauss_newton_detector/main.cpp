@@ -26,6 +26,10 @@ int main() {
     double estimate_theta = 0;
     double estimate_scale = 1;
 
+    // //現在のLena画像の正解パラメータ
+    // double theta = M_PI;
+    // double scale = 1.0;
+
     while(1){
         //画像I'に対するx方向の平滑微分画像I'x を計算する
         //マスク
