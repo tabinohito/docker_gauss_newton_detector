@@ -57,7 +57,7 @@ void rotateImage(const cv::Mat& input, cv::Mat& output, double angle)
 int main(int argc, char* argv[])
 {
     //入力画像を読み込む
-    cv::Mat inputImage = cv::imread("../../image/Lenna.png");
+    cv::Mat inputImage = cv::imread("../../image/Sample.png");
     if (inputImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
@@ -85,11 +85,11 @@ int main(int argc, char* argv[])
 
     // 3. アフィン変換行列を計算する
     cv::Point2f center(inputImage.cols / 2.0, inputImage.rows / 2.0);
-    cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, theta, scale);
+    cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, (-1) * theta, scale);
 
     // 4. 変換を行う
     cv::Mat outputImage;
-    cv::warpAffine(inputImage, outputImage, rotationMatrix, inputImage.size());
+    cv::warpAffine(inputImage, outputImage, rotationMatrix, inputImage.size(),cv::INTER_NEAREST);
 
     std::cout << "入力画像のサイズ: " << inputImage.rows << " : " << inputImage.cols << std::endl;
     std::cout << "出力画像のサイズ: " << outputImage.rows << " : " << outputImage.cols << std::endl;
@@ -102,15 +102,15 @@ int main(int argc, char* argv[])
     // cv::Mat resized_rotate_Image;
     // cv::warpAffine(outputImage, resized_rotate_Image, rerotationMatrix, outputImage.size());
 
-    cv::Mat resized_rotate_Image;
-    rotateImage(outputImage, resized_rotate_Image, theta * (-1));
-    resizeImage(resized_rotate_Image, resized_rotate_Image, 1 / scale);
+    // cv::Mat resized_rotate_Image;
+    // rotateImage(outputImage, resized_rotate_Image, theta);
+    // resizeImage(resized_rotate_Image, resized_rotate_Image, 1 / scale);
 
     // 画像の表示
-    cv::imshow("Resized and rotated image", resized_rotate_Image);
+    // cv::imshow("Resized and rotated image", resized_rotate_Image);
 
     // 画像を保存する
-    cv::imwrite("../../image/Lenna_similarity.png", outputImage);
+    cv::imwrite("../../image/Sample_Similarity.png", outputImage);
 
     // キーが押されるまで待機
     cv::waitKey(0);

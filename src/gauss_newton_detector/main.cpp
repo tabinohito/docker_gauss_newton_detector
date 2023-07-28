@@ -8,9 +8,9 @@
 int main() {
     std::string image_path = "../../image/";
     // 入力画像を読み込む
-    cv::Mat colorImage = cv::imread(image_path + "Lenna.png");
+    cv::Mat colorImage = cv::imread(image_path + "Sample.png");
     // 相似変換済みの入力画像を読み込む
-    cv::Mat colorSimilarityImage = cv::imread(image_path + "Lenna_similarity.png");
+    cv::Mat colorSimilarityImage = cv::imread(image_path + "Sample_Similarity.png");
     if (colorImage.empty() || colorSimilarityImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
@@ -114,13 +114,13 @@ int main() {
             }
         }
 
-        std::cerr << "J: " << J << std::endl;
+        // std::cerr << "J: " << J << std::endl;
 
-        std::cerr << "J_theta: " << J_theta << std::endl;
-        std::cerr << "J_theta_theta: " << J_theta_theta << std::endl;
-        std::cerr << "J_scale: " << J_scale << std::endl;
-        std::cerr << "J_scale_scale: " << J_scale_scale << std::endl;
-        std::cerr << "J_theta_scale: " << J_theta_scale << std::endl;
+        // std::cerr << "J_theta: " << J_theta << std::endl;
+        // std::cerr << "J_theta_theta: " << J_theta_theta << std::endl;
+        // std::cerr << "J_scale: " << J_scale << std::endl;
+        // std::cerr << "J_scale_scale: " << J_scale_scale << std::endl;
+        // std::cerr << "J_theta_scale: " << J_theta_scale << std::endl;
 
         // ヤコビアンの計算
         Eigen::Matrix2d A;
@@ -133,13 +133,13 @@ int main() {
         std::cerr << "X: \n" << X << std::endl;
 
         // 収束判定
-        if(std::abs(J) < 1e+6 ){
+        if(std::abs(X(0)) < 1e-6 && std::abs(X(1)) < 1e-6 ){
             break;
         }
         else{
             estimate_theta += X(0);
             estimate_scale += X(1);
-            std::cerr << "estimate_theta: " << estimate_theta << std::endl;
+            std::cerr << "estimate_theta: " << estimate_theta  * 180 / M_PI << std::endl;
             std::cerr << "estimate_scale: " << estimate_scale << std::endl;
         }
     }
