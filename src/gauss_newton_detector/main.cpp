@@ -107,7 +107,7 @@ int main() {
                     J_theta += diff_I * tmp_theta;
                     J_theta_theta += tmp_theta * tmp_theta;
                     J_scale += diff_I * tmp_scale;
-                    J_scale_scale += diff_I * tmp_scale * tmp_scale;
+                    J_scale_scale += tmp_scale * tmp_scale;
                     J_theta_scale +=  tmp_theta * (diff_I + tmp_scale);
                     
                 }
