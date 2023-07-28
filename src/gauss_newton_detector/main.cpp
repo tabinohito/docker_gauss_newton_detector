@@ -22,6 +22,14 @@ int main() {
     cv::Mat inputSimilarityImage;
     cv::cvtColor(colorSimilarityImage, inputSimilarityImage, cv::COLOR_BGR2GRAY);
 
+    // ガウシアンフィルタ
+    const int filtersize = 3;
+    cv::Mat gaussianInputImage;
+    cv::GaussianBlur(inputImage, gaussianInputImage, cv::Size(filtersize, filtersize), cv::BORDER_REFLECT);
+    cv::Mat gaussianInputSimilarityImage;
+    cv::GaussianBlur(inputSimilarityImage, gaussianInputSimilarityImage, cv::Size(filtersize, filtersize), cv::BORDER_REFLECT);
+
+
     //初期値を適当に与える
     double estimate_theta = 0;
     double estimate_scale = 1;
@@ -38,11 +46,11 @@ int main() {
             0, -1, 1,
             0, 0, 0);
         //平滑微分画像I'x
-        cv::Mat gradientX(inputSimilarityImage.size(), CV_64F, cv::Scalar(0));
-        for (int row = 0; row < inputSimilarityImage.rows - 2; ++row) {
-            for (int col = 0; col < inputSimilarityImage.cols - 2; ++col) {
+        cv::Mat gradientX(gaussianInputSimilarityImage.size(), CV_64F, cv::Scalar(0));
+        for (int row = 0; row < gaussianInputSimilarityImage.rows - 2; ++row) {
+            for (int col = 0; col < gaussianInputSimilarityImage.cols - 2; ++col) {
                 // 3x3のブロックを抽出
-                cv::Mat block = inputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
+                cv::Mat block = gaussianInputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
                         gradientX.at<double>(col,row) += static_cast<double>(block.at<uint8_t>(j,i)) * differential_filter_x.at<double>(j, i);
@@ -58,11 +66,11 @@ int main() {
             0, -1, 0,
             0, 1, 0);
         //平滑微分画像I'y
-        cv::Mat gradientY(inputSimilarityImage.size(), CV_64F, cv::Scalar(0));
-        for (int row = 0; row < inputSimilarityImage.rows - 2; ++row) {
-            for (int col = 0; col < inputSimilarityImage.cols - 2; ++col) {
+        cv::Mat gradientY(gaussianInputSimilarityImage.size(), CV_64F, cv::Scalar(0));
+        for (int row = 0; row < gaussianInputSimilarityImage.rows - 2; ++row) {
+            for (int col = 0; col < gaussianInputSimilarityImage.cols - 2; ++col) {
                 // 3x3のブロックを抽出
-                cv::Mat block = inputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
+                cv::Mat block = gaussianInputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
                         gradientY.at<double>(col,row) += static_cast<double>(block.at<uint8_t>(j , i)) * differential_filter_y.at<double>(j , i);
@@ -79,20 +87,20 @@ int main() {
         double J = 0; // 目的関数
 
         // 出力画像の中心座標を計算する
-        cv::Point2d center(inputSimilarityImage.cols / 2.0, inputSimilarityImage.rows / 2.0);
+        cv::Point2d center(gaussianInputSimilarityImage.cols / 2.0, gaussianInputSimilarityImage.rows / 2.0);
 
-        for (int row = 0; row < inputSimilarityImage.rows; ++row) {
-            for (int col = 0; col < inputSimilarityImage.cols; ++col) {
+        for (int row = 0; row < gaussianInputSimilarityImage.rows; ++row) {
+            for (int col = 0; col < gaussianInputSimilarityImage.cols; ++col) {
                 // 出力画像の座標を計算する
                 double x = estimate_scale * ((static_cast<double>(row) - center.x) * std::cos(estimate_theta) - (static_cast<double>(col) - center.y) * std::sin(estimate_theta) + center.x);
                 double y = estimate_scale * ((static_cast<double>(row) - center.x) * std::sin(estimate_theta) + (static_cast<double>(col) - center.y) * std::cos(estimate_theta) + center.y);
 
                 // 出力画像の座標が入力画像の範囲内であるかをチェックする
-                if (x < 0 || x >= inputSimilarityImage.rows || y < 0 || y >= inputSimilarityImage.cols) {
+                if (x < 0 || x >= gaussianInputSimilarityImage.rows || y < 0 || y >= gaussianInputSimilarityImage.cols) {
                     continue;
                 }
                 else{
-                    double diff_I = static_cast<double>(inputSimilarityImage.at<uint8_t>(std::round(y),std::round(x)) - static_cast<double>(inputImage.at<uint8_t>(col,row)));
+                    double diff_I = static_cast<double>(gaussianInputSimilarityImage.at<uint8_t>(std::round(y),std::round(x)) - static_cast<double>(gaussianInputImage.at<uint8_t>(col,row)));
                     J += 0.5 * (diff_I * diff_I);
                     double tmp_theta = 
                     gradientX.at<double>(std::round(y),std::round(x)) * estimate_scale *(-1 * std::sin(estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
@@ -130,15 +138,17 @@ int main() {
         B << J_theta, J_scale;
 
         Eigen::Vector2d X = -A.inverse() * B;
-        std::cerr << "X: \n" << X << std::endl;
+        // std::cerr << "X: \n" << X << std::endl;
 
         // 収束判定
-        if(std::abs(X(0)) < 1e-6 && std::abs(X(1)) < 1e-6 ){
+        if(std::abs(X(0)) < 1e-8 && std::abs(X(1)) < 1e-8 ){
             break;
         }
         else{
             estimate_theta += X(0);
             estimate_scale += X(1);
+            std::cerr << "theta: " << X(0) << std::endl;
+            std::cerr << "scale: " << X(1) << std::endl;
             std::cerr << "estimate_theta: " << estimate_theta  * 180 / M_PI << std::endl;
             std::cerr << "estimate_scale: " << estimate_scale << std::endl;
         }
