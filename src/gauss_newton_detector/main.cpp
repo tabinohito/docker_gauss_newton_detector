@@ -9,39 +9,32 @@ int main() {
     std::string image_path = "../../image/";
     // 入力画像を読み込む
     cv::Mat colorImage = cv::imread(image_path + "Lenna.png");
-    // 入力画像を読み込む
+    // 相似変換済みの入力画像を読み込む
     cv::Mat colorSimilarityImage = cv::imread(image_path + "Lenna_similarity.png");
     if (colorImage.empty() || colorSimilarityImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
     }
 
+    // グレースケール画像に変換する
     cv::Mat inputImage;
     cv::cvtColor(colorImage, inputImage, cv::COLOR_BGR2GRAY);
-
     cv::Mat inputSimilarityImage;
     cv::cvtColor(colorSimilarityImage, inputSimilarityImage, cv::COLOR_BGR2GRAY);
 
-    // cv::imshow("Input Image", inputImage);
-    // cv::imshow("Input Similarity Image", inputSimilarityImage);
-    // cv::waitKey(0);
-
     //初期値を適当に与える
-    double estimate_theta = -M_PI;
-    double estimate_scale = 0.99;
-
-    // double estimate_theta = 0;
-    // double estimate_scale = 1;
+    double estimate_theta = 0;
+    double estimate_scale = 1;
 
     while(1){
-        //画像I'に対する平滑微分画像I'x を計算する
+        //画像I'に対するx方向の平滑微分画像I'x を計算する
+        //マスク
         cv::Mat differential_filter_x = (cv::Mat_<double>(3, 3) << 
             0, 0, 0,
             0, -1, 1,
             0, 0, 0);
-
+        //平滑微分画像I'x
         cv::Mat gradientX(inputSimilarityImage.size(), CV_8U, cv::Scalar(0));
-
         for (int row = 0; row < inputSimilarityImage.rows - 2; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols - 2; ++col) {
                 // 3x3のブロックを抽出
@@ -54,14 +47,14 @@ int main() {
             }
         }
 
-        //画像I'に対する平滑微分画像I'y を計算する
+        //画像I'に対するy方向の平滑微分画像I'y を計算する
+        //マスク
         cv::Mat differential_filter_y = (cv::Mat_<double>(3, 3) << 
             0, 0, 0,
             0, -1, 0,
             0, 1, 0);
-
+        //平滑微分画像I'y
         cv::Mat gradientY(inputSimilarityImage.size(), CV_8U, cv::Scalar(0));
-
         for (int row = 0; row < inputSimilarityImage.rows - 2; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols - 2; ++col) {
                 // 3x3のブロックを抽出
@@ -79,9 +72,11 @@ int main() {
         double J_scale = 0; // scaleでの1回微分
         double J_scale_scale = 0.0; // scaleでの2回微分
         double J_theta_scale = 0.0; // thetaとscaleの混合微分
-        double J = 0;
+        double J = 0; // 目的関数
 
+        // 出力画像の中心座標を計算する
         cv::Point2d center(inputSimilarityImage.cols / 2.0, inputSimilarityImage.rows / 2.0);
+
         for (int row = 0; row < inputSimilarityImage.rows; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols; ++col) {
                 // 出力画像の座標を計算する
@@ -95,11 +90,10 @@ int main() {
                 else{
                     double diff_I = static_cast<double>(inputSimilarityImage.at<uint8_t>(std::round(y),std::round(x)) - static_cast<double>(inputImage.at<uint8_t>(col,row)));
                     J += 0.5 * (diff_I * diff_I);
-
                     double tmp_theta = 
-                    gradientX.at<uint8_t>(std::round(y),std::round(x)) * (-1 * std::sin(estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
+                    gradientX.at<uint8_t>(std::round(y),std::round(x)) * estimate_scale *(-1 * std::sin(estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
                     +
-                    gradientY.at<uint8_t>(std::round(y),std::round(x)) * (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
+                    gradientY.at<uint8_t>(std::round(y),std::round(x)) * estimate_scale *(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
 
                     double tmp_scale =
                     gradientX.at<uint8_t>(std::round(y),std::round(x)) * (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))
@@ -124,6 +118,7 @@ int main() {
         std::cerr << "J_scale_scale: " << J_scale_scale << std::endl;
         std::cerr << "J_theta_scale: " << J_theta_scale << std::endl;
 
+        // ヤコビアンの計算
         Eigen::Matrix2d A;
         A << J_theta_theta, J_theta_scale,
             J_theta_scale, J_scale_scale;
@@ -133,6 +128,7 @@ int main() {
         Eigen::Vector2d X = -A.inverse() * B;
         std::cerr << "X: \n" << X << std::endl;
 
+        // 収束判定
         if(std::abs(J) < 1e+6 ){
             break;
         }
@@ -142,17 +138,10 @@ int main() {
             std::cerr << "estimate_theta: " << estimate_theta << std::endl;
             std::cerr << "estimate_scale: " << estimate_scale << std::endl;
         }
-        // break;
     }
 
     std::cerr << "theta: " << estimate_theta * 180 / M_PI << std::endl;
     std::cerr << "scale: " << estimate_scale << std::endl;
-
-
-    // cv::imwrite(image_path + "gradientX.jpg", gradientX);
-    // cv::imwrite(image_path + "gradientY.jpg", gradientY);
-    // // cv::waitKey(0);
-    // // cv::destroyAllWindows();
 
     return 0;
 }
