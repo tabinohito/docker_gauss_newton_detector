@@ -57,7 +57,7 @@ void rotateImage(const cv::Mat& input, cv::Mat& output, double angle)
 int main(int argc, char* argv[])
 {
     //入力画像を読み込む
-    cv::Mat inputImage = cv::imread("../../image/Sample.png");
+    cv::Mat inputImage = cv::imread("../../image/Lenna_Circle.png");
     if (inputImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
     // cv::imshow("Resized and rotated image", resized_rotate_Image);
 
     // 画像を保存する
-    cv::imwrite("../../image/Sample_Similarity.png", outputImage);
+    cv::imwrite("../../image/Lenna_Circle_Similarity.png", outputImage);
 
     // キーが押されるまで待機
     cv::waitKey(0);

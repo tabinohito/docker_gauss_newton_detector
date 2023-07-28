@@ -8,9 +8,9 @@
 int main() {
     std::string image_path = "../../image/";
     // 入力画像を読み込む
-    cv::Mat colorImage = cv::imread(image_path + "Sample.png");
+    cv::Mat colorImage = cv::imread(image_path + "Lenna_Circle.png");
     // 相似変換済みの入力画像を読み込む
-    cv::Mat colorSimilarityImage = cv::imread(image_path + "Sample_Similarity.png");
+    cv::Mat colorSimilarityImage = cv::imread(image_path + "Lenna_Circle_Similarity.png");
     if (colorImage.empty() || colorSimilarityImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
@@ -23,7 +23,7 @@ int main() {
     cv::cvtColor(colorSimilarityImage, inputSimilarityImage, cv::COLOR_BGR2GRAY);
 
     // ガウシアンフィルタ
-    const int filtersize = 3;
+    const int filtersize = 15;
     cv::Mat gaussianInputImage;
     cv::GaussianBlur(inputImage, gaussianInputImage, cv::Size(filtersize, filtersize), cv::BORDER_REFLECT);
     cv::Mat gaussianInputSimilarityImage;
@@ -32,11 +32,7 @@ int main() {
 
     //初期値を適当に与える
     double estimate_theta = 0;
-    double estimate_scale = 1;
-
-    // //現在のLena画像の正解パラメータ
-    // double theta = M_PI;
-    // double scale = 1.0;
+    double estimate_scale = 0.9;
 
     while(1){
         //画像I'に対するx方向の平滑微分画像I'x を計算する
@@ -122,13 +118,13 @@ int main() {
             }
         }
 
-        // std::cerr << "J: " << J << std::endl;
+        std::cerr << "J: " << J << std::endl;
 
-        // std::cerr << "J_theta: " << J_theta << std::endl;
-        // std::cerr << "J_theta_theta: " << J_theta_theta << std::endl;
-        // std::cerr << "J_scale: " << J_scale << std::endl;
-        // std::cerr << "J_scale_scale: " << J_scale_scale << std::endl;
-        // std::cerr << "J_theta_scale: " << J_theta_scale << std::endl;
+        std::cerr << "J_theta: " << J_theta << std::endl;
+        std::cerr << "J_theta_theta: " << J_theta_theta << std::endl;
+        std::cerr << "J_scale: " << J_scale << std::endl;
+        std::cerr << "J_scale_scale: " << J_scale_scale << std::endl;
+        std::cerr << "J_theta_scale: " << J_theta_scale << std::endl;
 
         // ヤコビアンの計算
         Eigen::Matrix2d A;
@@ -141,7 +137,7 @@ int main() {
         // std::cerr << "X: \n" << X << std::endl;
 
         // 収束判定
-        if(std::abs(X(0)) < 1e-8 && std::abs(X(1)) < 1e-8 ){
+        if(std::abs(X(0)) < 1e-5 && std::abs(X(1)) < 1e-5 ){
             break;
         }
         else{
