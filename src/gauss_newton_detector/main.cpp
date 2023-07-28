@@ -38,14 +38,14 @@ int main() {
             0, -1, 1,
             0, 0, 0);
         //平滑微分画像I'x
-        cv::Mat gradientX(inputSimilarityImage.size(), CV_8U, cv::Scalar(0));
+        cv::Mat gradientX(inputSimilarityImage.size(), CV_64F, cv::Scalar(0));
         for (int row = 0; row < inputSimilarityImage.rows - 2; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols - 2; ++col) {
                 // 3x3のブロックを抽出
                 cv::Mat block = inputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
-                        gradientX.at<uint8_t>(col,row) += block.at<uint8_t>(j,i) * differential_filter_x.at<double>(j, i);
+                        gradientX.at<double>(col,row) += static_cast<double>(block.at<uint8_t>(j,i)) * differential_filter_x.at<double>(j, i);
                     }
                 }
             }
@@ -58,14 +58,14 @@ int main() {
             0, -1, 0,
             0, 1, 0);
         //平滑微分画像I'y
-        cv::Mat gradientY(inputSimilarityImage.size(), CV_8U, cv::Scalar(0));
+        cv::Mat gradientY(inputSimilarityImage.size(), CV_64F, cv::Scalar(0));
         for (int row = 0; row < inputSimilarityImage.rows - 2; ++row) {
             for (int col = 0; col < inputSimilarityImage.cols - 2; ++col) {
                 // 3x3のブロックを抽出
                 cv::Mat block = inputSimilarityImage(cv::Range(row, row + 3), cv::Range(col, col + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
-                        gradientY.at<uint8_t>(col,row) += block.at<uint8_t>(j , i) * differential_filter_y.at<double>(j , i);
+                        gradientY.at<double>(col,row) += static_cast<double>(block.at<uint8_t>(j , i)) * differential_filter_y.at<double>(j , i);
                     }
                 }
             }
@@ -95,20 +95,20 @@ int main() {
                     double diff_I = static_cast<double>(inputSimilarityImage.at<uint8_t>(std::round(y),std::round(x)) - static_cast<double>(inputImage.at<uint8_t>(col,row)));
                     J += 0.5 * (diff_I * diff_I);
                     double tmp_theta = 
-                    gradientX.at<uint8_t>(std::round(y),std::round(x)) * estimate_scale *(-1 * std::sin(estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
+                    gradientX.at<double>(std::round(y),std::round(x)) * estimate_scale *(-1 * std::sin(estimate_theta) * static_cast<double>(row) - std::cos(estimate_theta) * static_cast<double>(col))
                     +
-                    gradientY.at<uint8_t>(std::round(y),std::round(x)) * estimate_scale *(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
+                    gradientY.at<double>(std::round(y),std::round(x)) * estimate_scale *(std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col));
 
                     double tmp_scale =
-                    gradientX.at<uint8_t>(std::round(y),std::round(x)) * (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))
+                    gradientX.at<double>(std::round(y),std::round(x)) * (std::cos(estimate_theta) * static_cast<double>(row) - std::sin(estimate_theta) * static_cast<double>(col))
                     +
-                    gradientY.at<uint8_t>(std::round(y),std::round(x)) * (std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col));
+                    gradientY.at<double>(std::round(y),std::round(x)) * (std::sin(estimate_theta) * static_cast<double>(row) + std::cos(estimate_theta) * static_cast<double>(col));
 
                     J_theta += diff_I * tmp_theta;
                     J_theta_theta += tmp_theta * tmp_theta;
                     J_scale += diff_I * tmp_scale;
                     J_scale_scale += tmp_scale * tmp_scale;
-                    J_theta_scale +=  tmp_theta * (diff_I + tmp_scale);
+                    J_theta_scale +=  tmp_theta * tmp_scale;
                     
                 }
             }
