@@ -4,13 +4,24 @@
 #include <string>
 #include <Eigen/Core>
 #include <Eigen/LU>
+#include <string>
+#include <charconv>
 
-int main() {
+int main(int argc, char* argv[]) {
     std::string image_path = "../../image/";
+
+    // 入力変換パラメータ
+    if(argc != 3) {
+        std::cerr << "Wrong number of input parameters" << std::endl;
+        return -1;
+    }
+    std::string inputImage_path = std::string(argv[1]);
+    std::string inputSimilarityImage_path = std::string(argv[2]);
+
     // 入力画像を読み込む
-    cv::Mat colorImage = cv::imread(image_path + "Lenna_Circle.png");
+    cv::Mat colorImage = cv::imread(image_path + inputImage_path);
     // 相似変換済みの入力画像を読み込む
-    cv::Mat colorSimilarityImage = cv::imread(image_path + "Lenna_Circle_Similarity.png");
+    cv::Mat colorSimilarityImage = cv::imread(image_path + inputSimilarityImage_path);
     if (colorImage.empty() || colorSimilarityImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
@@ -29,20 +40,31 @@ int main() {
     cv::Mat gaussianInputSimilarityImage;
     cv::GaussianBlur(inputSimilarityImage, gaussianInputSimilarityImage, cv::Size(filtersize, filtersize), cv::BORDER_REFLECT);
 
-
     //初期値を適当に与える
     double estimate_theta = 0;
     double estimate_scale = 0.9;
 
+    //マスク
+    cv::Mat differential_filter_x = (cv::Mat_<double>(3, 3) << 
+        0, 0, 0,
+        0, -1, 1,
+        0, 0, 0);
+    cv::Mat differential_filter_y = (cv::Mat_<double>(3, 3) << 
+        0, 0, 0,
+        0, -1, 0,
+        0, 1, 0);
+    
+
     while(1){
+        double J_theta = 0; // thetaでの1回微分
+        double J_theta_theta = 0.0; // thetaでの2回微分
+        double J_scale = 0; // scaleでの1回微分
+        double J_scale_scale = 0.0; // scaleでの2回微分
+        double J_theta_scale = 0.0; // thetaとscaleの混合微分
+        double J = 0; // 目的関数
+
         //画像I'に対するx方向の平滑微分画像I'x を計算する
-        //マスク
-        cv::Mat differential_filter_x = (cv::Mat_<double>(3, 3) << 
-            0, 0, 0,
-            0, -1, 1,
-            0, 0, 0);
-        //平滑微分画像I'x
-        cv::Mat gradientX(gaussianInputSimilarityImage.size(), CV_64F, cv::Scalar(0));
+        cv::Mat gradientX(gaussianInputSimilarityImage.size(), CV_64F, cv::Scalar(0)); //平滑微分画像I'x
         for (int row = 0; row < gaussianInputSimilarityImage.rows - 2; ++row) {
             for (int col = 0; col < gaussianInputSimilarityImage.cols - 2; ++col) {
                 // 3x3のブロックを抽出
@@ -56,13 +78,7 @@ int main() {
         }
 
         //画像I'に対するy方向の平滑微分画像I'y を計算する
-        //マスク
-        cv::Mat differential_filter_y = (cv::Mat_<double>(3, 3) << 
-            0, 0, 0,
-            0, -1, 0,
-            0, 1, 0);
-        //平滑微分画像I'y
-        cv::Mat gradientY(gaussianInputSimilarityImage.size(), CV_64F, cv::Scalar(0));
+        cv::Mat gradientY(gaussianInputSimilarityImage.size(), CV_64F, cv::Scalar(0)); //平滑微分画像I'y
         for (int row = 0; row < gaussianInputSimilarityImage.rows - 2; ++row) {
             for (int col = 0; col < gaussianInputSimilarityImage.cols - 2; ++col) {
                 // 3x3のブロックを抽出
@@ -74,13 +90,6 @@ int main() {
                 }
             }
         }
-
-        double J_theta = 0; // thetaでの1回微分
-        double J_theta_theta = 0.0; // thetaでの2回微分
-        double J_scale = 0; // scaleでの1回微分
-        double J_scale_scale = 0.0; // scaleでの2回微分
-        double J_theta_scale = 0.0; // thetaとscaleの混合微分
-        double J = 0; // 目的関数
 
         // 出力画像の中心座標を計算する
         cv::Point2d center(gaussianInputSimilarityImage.cols / 2.0, gaussianInputSimilarityImage.rows / 2.0);
