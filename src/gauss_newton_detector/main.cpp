@@ -54,7 +54,6 @@ int main(int argc, char* argv[]) {
         0, -1, 0,
         0, 1, 0);
     
-
     while(1){
         double J_theta = 0; // thetaでの1回微分
         double J_theta_theta = 0.0; // thetaでの2回微分

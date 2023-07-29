@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     std::string outputImage_name = "../../image/" + inputImage_name.erase(inputImage_name.find(".png")) + "_Similarity.png";
     std::cout << "Output image name is " << outputImage_name << std::endl;
     //入力画像を読み込む
-    cv::Mat inputImage = cv::imread("../../image" + inputImage_name);
+    cv::Mat inputImage = cv::imread("../../image/" + inputImage_name + ".png");
     if (inputImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
     cv::imshow("img", outputImage);
 
     // 画像を保存する
-    cv::imwrite("../../image/" + outputImage_name, outputImage);
+    cv::imwrite(outputImage_name, outputImage);
 
     // キーが押されるまで待機
     cv::waitKey(0);
