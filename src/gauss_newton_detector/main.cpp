@@ -96,8 +96,8 @@ int main(int argc, char* argv[]) {
         for (int row = 0; row < gaussianInputSimilarityImage.rows; ++row) {
             for (int col = 0; col < gaussianInputSimilarityImage.cols; ++col) {
                 // 出力画像の座標を計算する
-                double x = estimate_scale * ((static_cast<double>(row) - center.x) * std::cos(estimate_theta) - (static_cast<double>(col) - center.y) * std::sin(estimate_theta) + center.x);
-                double y = estimate_scale * ((static_cast<double>(row) - center.x) * std::sin(estimate_theta) + (static_cast<double>(col) - center.y) * std::cos(estimate_theta) + center.y);
+                double x = estimate_scale * ((static_cast<double>(row) - center.x) * std::cos(estimate_theta) - (static_cast<double>(col) - center.y) * std::sin(estimate_theta)) + center.x;
+                double y = estimate_scale * ((static_cast<double>(row) - center.x) * std::sin(estimate_theta) + (static_cast<double>(col) - center.y) * std::cos(estimate_theta)) + center.y;
 
                 // 出力画像の座標が入力画像の範囲内であるかをチェックする
                 if (x < 0 || x >= gaussianInputSimilarityImage.rows || y < 0 || y >= gaussianInputSimilarityImage.cols) {
