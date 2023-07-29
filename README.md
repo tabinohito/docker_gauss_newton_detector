@@ -20,3 +20,17 @@ sudo ./run.sh
 ```
 ./run.sh
 ```
+
+## Run similarity_transformation
+```
+cd /workspace/src/similarity_transformation/build
+cmake --build .
+./main <theta param> <scale param> <Input image name>.png
+```
+
+## Run gauss_newton_detector
+```
+cd /workspace/src/gauss_newton_detector/build
+cmake --build .
+./main <Input image name>.png <Input image name>_Similarity.png
+```
