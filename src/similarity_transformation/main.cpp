@@ -56,15 +56,18 @@ void rotateImage(const cv::Mat& input, cv::Mat& output, double angle)
 
 int main(int argc, char* argv[])
 {
+    std::string inputImage_name = std::string(argv[3]);
+    std::string outputImage_name = "../../image/" + inputImage_name.erase(inputImage_name.find(".png")) + "_Similarity.png";
+    std::cout << "Output image name is " << outputImage_name << std::endl;
     //入力画像を読み込む
-    cv::Mat inputImage = cv::imread("../../image/Lenna_Circle.png");
+    cv::Mat inputImage = cv::imread("../../image" + inputImage_name);
     if (inputImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
     }
 
     // 入力変換パラメータ
-    if(argc != 3) {
+    if(argc != 4) {
         std::cerr << "Wrong number of input parameters" << std::endl;
         return -1;
     }
