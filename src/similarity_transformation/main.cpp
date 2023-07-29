@@ -56,15 +56,18 @@ void rotateImage(const cv::Mat& input, cv::Mat& output, double angle)
 
 int main(int argc, char* argv[])
 {
+    std::string inputImage_name = std::string(argv[3]);
+    std::string outputImage_name = "../../image/" + inputImage_name.erase(inputImage_name.find(".png")) + "_Similarity.png";
+    std::cout << "Output image name is " << outputImage_name << std::endl;
     //入力画像を読み込む
-    cv::Mat inputImage = cv::imread("../../image/Lenna_Circle.png");
+    cv::Mat inputImage = cv::imread("../../image/" + inputImage_name + ".png");
     if (inputImage.empty()) {
         std::cerr << "入力画像を読み込めませんでした。" << std::endl;
         return -1;
     }
 
     // 入力変換パラメータ
-    if(argc != 3) {
+    if(argc != 4) {
         std::cerr << "Wrong number of input parameters" << std::endl;
         return -1;
     }
@@ -97,20 +100,8 @@ int main(int argc, char* argv[])
     // imgの表示
     cv::imshow("img", outputImage);
 
-
-    // cv::Mat rerotationMatrix = cv::getRotationMatrix2D(center, -theta, 1/scale);
-    // cv::Mat resized_rotate_Image;
-    // cv::warpAffine(outputImage, resized_rotate_Image, rerotationMatrix, outputImage.size());
-
-    // cv::Mat resized_rotate_Image;
-    // rotateImage(outputImage, resized_rotate_Image, theta);
-    // resizeImage(resized_rotate_Image, resized_rotate_Image, 1 / scale);
-
-    // 画像の表示
-    // cv::imshow("Resized and rotated image", resized_rotate_Image);
-
     // 画像を保存する
-    cv::imwrite("../../image/Lenna_Circle_Similarity.png", outputImage);
+    cv::imwrite(outputImage_name, outputImage);
 
     // キーが押されるまで待機
     cv::waitKey(0);
