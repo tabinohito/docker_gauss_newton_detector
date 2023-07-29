@@ -100,20 +100,8 @@ int main(int argc, char* argv[])
     // imgの表示
     cv::imshow("img", outputImage);
 
-
-    // cv::Mat rerotationMatrix = cv::getRotationMatrix2D(center, -theta, 1/scale);
-    // cv::Mat resized_rotate_Image;
-    // cv::warpAffine(outputImage, resized_rotate_Image, rerotationMatrix, outputImage.size());
-
-    // cv::Mat resized_rotate_Image;
-    // rotateImage(outputImage, resized_rotate_Image, theta);
-    // resizeImage(resized_rotate_Image, resized_rotate_Image, 1 / scale);
-
-    // 画像の表示
-    // cv::imshow("Resized and rotated image", resized_rotate_Image);
-
     // 画像を保存する
-    cv::imwrite("../../image/Lenna_Circle_Similarity.png", outputImage);
+    cv::imwrite("../../image/" + outputImage_name, outputImage);
 
     // キーが押されるまで待機
     cv::waitKey(0);
