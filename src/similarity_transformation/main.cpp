@@ -71,6 +71,7 @@ int main(int argc, char* argv[])
         std::cerr << "Wrong number of input parameters" << std::endl;
         return -1;
     }
+
     double theta;
     if(std::from_chars(argv[1], argv[1] + std::strlen(argv[1]), theta).ec != std::errc()) {
         std::cerr << "Wrong theta param" << std::endl;
@@ -81,7 +82,7 @@ int main(int argc, char* argv[])
     if(std::from_chars(argv[2], argv[2] + std::strlen(argv[2]), scale).ec != std::errc()) {
         std::cerr << "Wrong scale param" << std::endl;
         return -1;
-    }   
+    }
 
     std::cout << "Theta is " << theta << std::endl;
     std::cout << "Scale is " << scale << std::endl;
