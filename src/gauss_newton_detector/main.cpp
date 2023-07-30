@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
                 cv::Mat block = gaussianInputSimilarityImage(cv::Range(col, col + 3),cv::Range(row, row + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
-                        gradientX.at<double>(col,row) += static_cast<double>(block.at<uint8_t>(j,i)) * differential_filter_x.at<double>(j, i);
+                        gradientX.at<double>(col + 1,row + 1) += static_cast<double>(block.at<uint8_t>(j,i)) * differential_filter_x.at<double>(j, i);
                     }
                 }
             }
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
                 cv::Mat block = gaussianInputSimilarityImage(cv::Range(col, col + 3),cv::Range(row, row + 3));
                 for(int i = 0; i < block.rows; ++i) {
                     for(int j = 0; j < block.cols; ++j) {
-                        gradientY.at<double>(col,row) += static_cast<double>(block.at<uint8_t>(j +  1, i + 1)) * differential_filter_y.at<double>(j , i);
+                        gradientY.at<double>(col + 1,row + 1) += static_cast<double>(block.at<uint8_t>(j, i)) * differential_filter_y.at<double>(j , i);
                     }
                 }
             }
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "X: \n" << X << std::endl;
 
         // 収束判定
-        if(std::abs(X(0)) < 1.0e-5 && std::abs(X(1)) < 1.0e-5){
+        if(std::abs(X(0)) < 1.0e-6 && std::abs(X(1)) < 1.0e-6){
             break;
         }
         else{
