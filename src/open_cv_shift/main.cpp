@@ -66,8 +66,8 @@ int main(int argc, char* argv[]) {
                         homography.at<double>(1, 0) * homography.at<double>(1, 0));
     double angle = atan2(homography.at<double>(1, 0), homography.at<double>(0, 0)) * 180 / CV_PI;
 
-    std::cout << "推定されたスケールパラメータ: " << scale << std::endl;
     std::cout << "推定された角度パラメータ: " << angle << " 度" << std::endl;
+    std::cout << "推定されたスケールパラメータ: " << scale << std::endl;
 
     return 0;
 }

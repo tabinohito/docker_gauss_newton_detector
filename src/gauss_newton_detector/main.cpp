@@ -10,13 +10,47 @@
 int main(int argc, char* argv[]) {
     std::string image_path = "../../image/";
 
+    auto rad2deg = [](double radians) {
+        return radians * 180.0 / M_PI;
+    };
+
+    auto deg2rad = [](double degrees) {
+      return degrees * M_PI / 180.0;
+    };
+
     // 入力変換パラメータ
-    if(argc != 3) {
+    if(argc != 5 && argc != 3) {
         std::cerr << "Wrong number of input parameters" << std::endl;
         return -1;
     }
     std::string inputImage_path = std::string(argv[1]);
     std::string inputSimilarityImage_path = std::string(argv[2]);
+
+    //初期値を適当に与える
+    double estimate_theta = deg2rad(0);
+    double estimate_scale = 1;
+
+    if(argc == 3) {
+        // 入力変換パラメータがない場合はデフォルト値を設定する
+        double theta_ = 0.0;
+        double scale_ = 1.0;
+    } else {
+        // 入力変換パラメータがある場合はそれを設定する
+        double theta_;
+        if(std::from_chars(argv[3], argv[3] + std::strlen(argv[3]), theta_).ec != std::errc()) {
+            std::cerr << "Wrong theta param" << std::endl;
+            return -1;
+        }
+
+        double scale_;
+        if(std::from_chars(argv[4], argv[4] + std::strlen(argv[4]), scale_).ec != std::errc()) {
+            std::cerr << "Wrong scale param" << std::endl;
+            return -1;
+        }
+
+        estimate_theta = deg2rad(theta_);
+        estimate_scale = scale_;
+    }
 
     // 入力画像を読み込む
     cv::Mat colorImage = cv::imread(image_path + inputImage_path);
@@ -39,18 +73,6 @@ int main(int argc, char* argv[]) {
     cv::GaussianBlur(inputImage, gaussianInputImage, cv::Size(filtersize, filtersize), cv::BORDER_REFLECT);
     cv::Mat gaussianInputSimilarityImage; // = inputSimilarityImage;
     cv::GaussianBlur(inputSimilarityImage, gaussianInputSimilarityImage, cv::Size(filtersize, filtersize), cv::BORDER_REFLECT);
-
-    auto rad2deg = [](double radians) {
-        return radians * 180.0 / M_PI;
-    };
-
-    auto deg2rad = [](double degrees) {
-      return degrees * M_PI / 180.0;
-    };
-
-    //初期値を適当に与える
-    double estimate_theta = deg2rad(0);
-    double estimate_scale = 1;
 
     //マスク
     cv::Mat differential_filter_x = (cv::Mat_<double>(3, 3) << 
@@ -153,7 +175,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "X: \n" << X << std::endl;
 
         // 収束判定
-        if(std::abs(X(0)) < 1.0e-6 && std::abs(X(1)) < 1.0e-6){
+        if(std::abs(X(0)) < 1.0e-4 && std::abs(X(1)) < 1.0e-4){
             break;
         }
         else{
@@ -163,7 +185,6 @@ int main(int argc, char* argv[]) {
             std::cerr << "scale: " << X(1) << std::endl;
             std::cerr << "estimate_theta: " << estimate_theta  * 180 / M_PI << std::endl;
             std::cerr << "estimate_scale: " << estimate_scale << std::endl;
-
         }
     }
 
