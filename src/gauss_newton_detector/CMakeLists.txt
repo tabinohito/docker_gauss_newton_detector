@@ -5,6 +5,9 @@ set(CMAKE_CXX_FLAGS "-O2")
 
 set(SOURCE_FILE main.cpp)
 
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+find_package(Python3 COMPONENTS NumPy)
+
 # OpenCVのビルド環境の設定ファイルを読み込む
 find_package(OpenCV REQUIRED)  
 
@@ -20,9 +23,12 @@ include_directories(
 add_executable(main
     ${SOURCE_FILE}
 )
- 
+
 # リンクするライブラリを読み込む
 target_link_libraries(main
     ${OpenCV_LIBRARIES}
     Eigen3::Eigen
+    Python3::Python
+    Python3::Module
+    Python3::NumPy
 )

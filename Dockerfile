@@ -96,3 +96,13 @@ RUN apt-get update -qq && \
     apt-get install -y \
     libcanberra-gtk-module \
     libcanberra-gtk3-module
+
+# Install Python
+RUN apt-get update -qq && \
+    apt-get install -y \
+    python3-dev \
+    python3-pip \
+    python3-numpy
+
+RUN pip install -U pip &&\
+    pip install --no-cache-dir scipy numpy matplotlib

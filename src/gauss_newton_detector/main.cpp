@@ -6,7 +6,9 @@
 #include <Eigen/LU>
 #include <string>
 #include <charconv>
+#include "./../matplotlib-cpp/matplotlibcpp.h"
 
+namespace plt = matplotlibcpp;
 int main(int argc, char* argv[]) {
     std::string image_path = "../../image/";
 
@@ -19,7 +21,7 @@ int main(int argc, char* argv[]) {
     };
 
     // 入力変換パラメータ
-    if(argc != 5 && argc != 3) {
+    if(argc != 7 && argc != 5 && argc != 3) {
         std::cerr << "Wrong number of input parameters" << std::endl;
         return -1;
     }
@@ -27,23 +29,33 @@ int main(int argc, char* argv[]) {
     std::string inputSimilarityImage_path = std::string(argv[2]);
 
     //初期値を適当に与える
-    double estimate_theta = deg2rad(0);
+    double estimate_theta = 0;
     double estimate_scale = 1;
 
-    if(argc == 3) {
-        // 入力変換パラメータがない場合はデフォルト値を設定する
-        double theta_ = 0.0;
-        double scale_ = 1.0;
-    } else {
+    double trust_theta = 0.0;
+    double trust_scale = 1.0;
+    if(std::from_chars(argv[3], argv[3] + std::strlen(argv[3]), trust_theta).ec != std::errc()) {
+        std::cerr << "Wrong trust_theta param" << std::endl;
+        return -1;
+    }
+
+    if(std::from_chars(argv[4], argv[4] + std::strlen(argv[4]), trust_scale).ec != std::errc()) {
+        std::cerr << "Wrong trust_scale param" << std::endl;
+        return -1;
+    }
+
+    // 入力変換パラメータがない場合はデフォルト値を設定する
+    double theta_ = 0.0;
+    double scale_ = 1.0;
+
+    if(argc == 7) {
         // 入力変換パラメータがある場合はそれを設定する
-        double theta_;
-        if(std::from_chars(argv[3], argv[3] + std::strlen(argv[3]), theta_).ec != std::errc()) {
+        if(std::from_chars(argv[5], argv[5] + std::strlen(argv[5]), theta_).ec != std::errc()) {
             std::cerr << "Wrong theta param" << std::endl;
             return -1;
         }
 
-        double scale_;
-        if(std::from_chars(argv[4], argv[4] + std::strlen(argv[4]), scale_).ec != std::errc()) {
+        if(std::from_chars(argv[6], argv[6] + std::strlen(argv[6]), scale_).ec != std::errc()) {
             std::cerr << "Wrong scale param" << std::endl;
             return -1;
         }
@@ -69,9 +81,9 @@ int main(int argc, char* argv[]) {
 
     // ガウシアンフィルタ
     const int filtersize = 3;
-    cv::Mat gaussianInputImage;// = inputImage;
+    cv::Mat gaussianInputImage;
     cv::GaussianBlur(inputImage, gaussianInputImage, cv::Size(filtersize, filtersize), cv::BORDER_REFLECT);
-    cv::Mat gaussianInputSimilarityImage; // = inputSimilarityImage;
+    cv::Mat gaussianInputSimilarityImage;
     cv::GaussianBlur(inputSimilarityImage, gaussianInputSimilarityImage, cv::Size(filtersize, filtersize), cv::BORDER_REFLECT);
 
     //マスク
@@ -83,7 +95,14 @@ int main(int argc, char* argv[]) {
         0, 0, 0,
         0, -1, 0,
         0, 1, 0);
-    
+
+    std::vector<double> theta;
+    std::vector<double> theta_standard;
+    std::vector<double> scale;
+    std::vector<double> scale_standard;
+    std::vector<double> iteration;
+    double iteration_count = 0;
+
     while(1){
         double J_theta = 0; // thetaでの1回微分
         double J_theta_theta = 0.0; // thetaでの2回微分
@@ -174,6 +193,13 @@ int main(int argc, char* argv[]) {
         Eigen::Vector2d X = -A.inverse() * B;
         std::cerr << "X: \n" << X << std::endl;
 
+        theta.push_back(estimate_theta * 180 / M_PI);
+        theta_standard.push_back(trust_theta);
+        scale.push_back(estimate_scale);
+        scale_standard.push_back(trust_scale);
+        iteration.push_back(iteration_count);
+        iteration_count++;
+
         // 収束判定
         if(std::abs(X(0)) < 1.0e-4 && std::abs(X(1)) < 1.0e-4){
             break;
@@ -187,6 +213,39 @@ int main(int argc, char* argv[]) {
             std::cerr << "estimate_scale: " << estimate_scale << std::endl;
         }
     }
+
+    // Plot line from given x and y data. Color is selected automatically.
+    std::map<std::string, std::string> args1{
+            {"label", "estimate_theta"},
+            {"c", "blue"}
+    };
+    std::map<std::string, std::string> args2{
+            {"label", "trust_theta"},
+            {"c", "red"}
+    };
+
+    // Set the size of output image to 1200x780 pixels
+    auto name_tmp = inputSimilarityImage_path.erase(inputSimilarityImage_path.find(".png"));
+
+    plt::figure_size(1200, 780);
+    plt::plot(iteration, theta, args1);
+    plt::plot(iteration,theta_standard ,"r--");
+    plt::legend();
+    plt::xlabel("STEP");
+    plt::ylabel("scale");
+    plt::grid("true");
+    plt::save(image_path + name_tmp + "_" + std::string(argv[3]) + "_theta_plot.png");
+
+    // Set the size of output image to 1200x780 pixels
+    plt::figure_size(1200, 780);
+    // Plot line from given x and y data. Color is selected automatically.
+    plt::plot(iteration, scale,args1);
+    plt::plot(iteration,scale_standard ,"r--");
+    plt::legend();
+    plt::xlabel("STEP");
+    plt::ylabel("scale");
+    plt::grid("true");
+    plt::save(image_path + name_tmp + "_" + std::string(argv[4]) + "_scale_plot.png");
 
     std::cerr << "theta: " << estimate_theta * 180 / M_PI << std::endl;
     std::cerr << "scale: " << estimate_scale << std::endl;
